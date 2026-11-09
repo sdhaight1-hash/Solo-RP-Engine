@@ -13,7 +13,9 @@ Custom-length plot track; beat invocation independent from confirmation; dismiss
 ## Validation
 Engine tests and syntax checks run locally. A Chromium end-to-end script covers campaign setup, safe text rendering, editing, custom tables, dice, scenes, beat confirmation, reload persistence, fresh-context import/export, malformed imports, mobile overflow, cross-tab conflicts and corrupt-save preservation. GitHub Actions runs this script and uploads desktop/mobile screenshots.
 
-Local browser execution was blocked by this agent workspace's process/network isolation. Do not claim the browser suite passed until its workflow run reports success. User visual/play testing remains necessary for layout and workflow preference.
+Local browser execution was blocked by this agent workspace's process/network isolation, so the suite ran on GitHub Actions. Both engine and Chromium jobs passed for commit 6c83f8c (run 42583358153). The first browser run caught mobile horizontal overflow; that defect was fixed before the successful rerun. Desktop and 390-pixel mobile screenshots were visually inspected. User visual/play testing remains necessary for layout and workflow preference.
+
+Validation run: https://github.com/sdhaight1-hash/Solo-RP-Engine/actions/runs/42583358153
 
 ## Next: user visual/play-test checkpoint
 Use README's five-step play test. Resolve workspace layout and panel visibility preferences before expanding the interface further.
