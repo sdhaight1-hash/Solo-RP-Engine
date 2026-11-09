@@ -48,6 +48,7 @@ const { chromium } = require('playwright');
     const boxes = await page.locator('.track-boxes .filled').count(); assert.equal(boxes, 1);
     await page.locator('#oracle-toggle').click(); assert.equal(await page.locator('#oracle-panel').isVisible(), false); await page.locator('#oracle-toggle').click();
     await page.setViewportSize({ width: 1280, height: 900 });
+    await page.locator('#oracle-panel').waitFor({ state: 'hidden' });
     assert.equal(await page.locator('#oracle-panel').isVisible(), false);
     await page.locator('#oracle-toggle').click(); assert.equal(await page.locator('#oracle-panel').isVisible(), true);
     await page.locator('#nodes-toggle').click(); assert.equal(await page.locator('#nodes-panel').isVisible(), true); assert.equal(await page.locator('#oracle-panel').isVisible(), false);
@@ -59,7 +60,7 @@ const { chromium } = require('playwright');
     await page.screenshot({ path: '/tmp/solo-rp-mobile.png', fullPage: true });
     const overflow = await page.evaluate(() => ({ width: innerWidth, scroll: document.documentElement.scrollWidth, elements: [...document.querySelectorAll('body *')].filter(el => el.getBoundingClientRect().right > innerWidth + 1).map(el => ({ tag: el.tagName, id: el.id, className: el.className, right: el.getBoundingClientRect().right })).slice(0, 15) }));
     assert.ok(overflow.scroll <= overflow.width, JSON.stringify(overflow));
-    await page.setViewportSize({ width: 1920, height: 1080 }); await page.screenshot({ path: '/tmp/solo-rp-desktop.png', fullPage: true });
+    await page.setViewportSize({ width: 1920, height: 1080 }); await page.locator('#oracle-panel').waitFor({ state: 'visible' }); await page.screenshot({ path: '/tmp/solo-rp-desktop.png', fullPage: true });
     // Two tabs must not silently overwrite one another.
     const other = await context.newPage(); await other.goto('http://localhost:3000');
     await page.locator('#entry').fill('A new clue'); await page.locator('#entry-submit').click();
