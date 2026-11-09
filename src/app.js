@@ -49,12 +49,51 @@ function card(title, body, meta, actions = []) {
   return el;
 }
 function rememberSelection() { try { localStorage.setItem(key + '-active', campaign().id); } catch { /* Campaign data save reports errors separately. */ } }
+const viewport = matchMedia('(max-width: 849px)');
+const wideViewport = matchMedia('(min-width: 1500px)');
+let mobilePanel = 'journal';
+const panels = { oracles: wideViewport.matches, entities: true, nodes: wideViewport.matches };
+let entityTab = 'characters';
+function applyLayout() {
+  const mobile = viewport.matches;
+  $('journal-panel').hidden = mobile && mobilePanel !== 'journal';
+  for (const [name, id] of [['oracles', 'oracle-panel'], ['entities', 'entities-panel'], ['nodes', 'nodes-panel']]) {
+    $(id).hidden = mobile ? mobilePanel !== name : !panels[name];
+    document.querySelector('.play-panels').classList.toggle('no-' + name, !panels[name]);
+  }
+  for (const [id, name] of [['journal-toggle', 'journal'], ['oracle-toggle', 'oracles'], ['entities-toggle', 'entities'], ['nodes-toggle', 'nodes']]) {
+    $(id).setAttribute('aria-pressed', String(mobile ? mobilePanel === name : name === 'journal' || panels[name]));
+  }
+}
 function showTab(next) {
   tab = next;
-  document.querySelectorAll('[data-panel]').forEach(el => { el.hidden = el.dataset.panel !== tab; });
-  document.querySelectorAll('[data-tab]').forEach(el => { if (el.dataset.tab === tab) el.setAttribute('aria-current', 'page'); else el.removeAttribute('aria-current'); });
+  $('settings-panel').hidden = true; document.querySelector('.play-panels').hidden = false;
+  if (next === 'journal') mobilePanel = 'journal';
+  applyLayout();
 }
-document.querySelectorAll('[data-tab]').forEach(el => { el.onclick = () => { showTab(el.dataset.tab); }; });
+function togglePanel(name) {
+  showTab('play');
+  if (viewport.matches) mobilePanel = name;
+  else if (name !== 'journal') {
+    panels[name] = !panels[name];
+    if (!wideViewport.matches && panels[name] && name === 'oracles') panels.nodes = false;
+    if (!wideViewport.matches && panels[name] && name === 'nodes') panels.oracles = false;
+  }
+  applyLayout();
+}
+for (const [id, name] of [['journal-toggle', 'journal'], ['oracle-toggle', 'oracles'], ['entities-toggle', 'entities'], ['nodes-toggle', 'nodes']]) $(id).onclick = () => togglePanel(name);
+function showEntity(next) {
+  entityTab = next;
+  document.querySelectorAll('[data-entity]').forEach(el => { el.hidden = el.dataset.entity !== next; });
+  document.querySelectorAll('[data-entity-tab]').forEach(el => { if (el.dataset.entityTab === next) el.setAttribute('aria-current', 'page'); else el.removeAttribute('aria-current'); });
+}
+document.querySelectorAll('[data-entity-tab]').forEach(el => { el.onclick = () => showEntity(el.dataset.entityTab); });
+for (const name of ['track', 'dice']) $(name + '-toggle').onclick = () => {
+  const el = $(name + '-panel'); el.hidden = !el.hidden; $(name + '-toggle').setAttribute('aria-expanded', String(!el.hidden));
+};
+$('settings-open').onclick = () => { const opening = $('settings-panel').hidden; $('settings-panel').hidden = !opening; document.querySelector('.play-panels').hidden = opening; };
+viewport.addEventListener('change', applyLayout);
+wideViewport.addEventListener('change', () => { panels.oracles = wideViewport.matches; panels.nodes = wideViewport.matches; applyLayout(); });
 function cancelEditors() {
   journalEdit = characterEdit = tableEdit = sceneEdit = nodeEdit = null;
   for (const f of ['journal-form', 'character-form', 'table-form', 'scene-form', 'node-form']) $(f).reset();
@@ -63,19 +102,41 @@ function cancelEditors() {
 }
 function renderJournal() {
   const c = campaign(), query = $('journal-search').value.toLowerCase();
-  const entries = c.journal.filter(x => x.body.toLowerCase().includes(query));
-  $('entry-count').textContent = `${c.journal.length} entries`;
+  const remainingBeats = [...c.plot.beats];
+  const events = c.journal.map(entry => ({ ...entry, kind: 'journal' }));
+  for (const entry of c.log) {
+    const i = remainingBeats.findIndex(b => entry.body === 'Beat invoked: ' + b.body);
+    const beat = i >= 0 ? remainingBeats.splice(i, 1)[0] : null;
+    events.push({ ...entry, kind: 'event', beat });
+  }
+  events.sort((a, b) => a.at.localeCompare(b.at));
+  const entries = events.filter(x => x.body.toLowerCase().includes(query));
+  $('entry-count').textContent = `${c.journal.length} ${c.journal.length === 1 ? 'entry' : 'entries'}`;
   $('journal-empty').hidden = entries.length > 0;
-  $('journal-empty').textContent = query ? 'No entries match your search.' : 'Your first page is waiting. Write the opening moment above.';
-  $('journal').replaceChildren(...entries.slice().reverse().map(entry => {
+  $('journal-empty').textContent = query ? 'No timeline entries match your search.' : 'Write your opening moment below, or ask an oracle to get started.';
+  const timeline = $('journal'), scroll = timeline.scrollTop;
+  const atEnd = timeline.scrollHeight - timeline.clientHeight - scroll < 40;
+  timeline.replaceChildren(...entries.map(entry => {
     const scene = c.scenes.find(s => s.id === entry.sceneId);
-    return card('', entry.body, [new Date(entry.at).toLocaleString(), scene?.name].filter(Boolean).join(' · '), [action('Edit entry', () => {
-      journalEdit = entry.id; $('entry').value = entry.body; $('entry-scene').value = entry.sceneId ?? ''; $('entry-submit').textContent = 'Save entry'; $('entry-cancel').hidden = false; $('entry').focus();
-    }), action('Delete entry', () => {
-      if (!confirm('Delete this journal entry?')) return;
-      c.journal = c.journal.filter(x => x.id !== entry.id); if (journalEdit === entry.id) cancelEditors(); save(); render();
-    })]);
+    const actions = [];
+    if (entry.kind === 'journal') {
+      actions.push(action('Edit entry', () => {
+        journalEdit = entry.id; $('entry').value = entry.body; $('entry-scene').value = entry.sceneId ?? ''; const speaker = entry.speaker || 'Narrator';
+        let option = [...$('entry-speaker').options].find(o => o.textContent === speaker);
+        if (!option) { option = new Option(speaker, 'archived-speaker'); $('entry-speaker').append(option); }
+        $('entry-speaker').value = option.value; $('entry-submit').textContent = 'Save entry'; $('entry-cancel').hidden = false; $('entry').focus();
+      }), action('Delete entry', () => {
+        if (!confirm('Delete this journal entry?')) return;
+        c.journal = c.journal.filter(x => x.id !== entry.id); if (journalEdit === entry.id) cancelEditors(); save(); render();
+      }));
+    }
+    if (entry.beat?.status === 'pending') actions.push(action('Confirm relevance', () => { resolveBeat(c, entry.beat.id, 'confirmed'); save(); render(); }), action('Dismiss beat', () => { resolveBeat(c, entry.beat.id, 'dismissed'); save(); render(); }));
+    const meta = [entry.beat ? 'BEAT · ' + entry.beat.status.toUpperCase() : entry.kind === 'event' ? 'GAME EVENT' : (entry.speaker || 'Narrator'), new Date(entry.at).toLocaleString(), scene?.name].filter(Boolean).join(' · ');
+    const el = card('', entry.body, meta, actions);
+    el.classList.add(entry.kind === 'journal' ? 'journal-entry' : entry.beat ? 'timeline-beat' : 'timeline-event');
+    return el;
   }));
+  timeline.scrollTop = atEnd ? timeline.scrollHeight : scroll;
 }
 function render() {
   const c = campaign();
@@ -84,18 +145,23 @@ function render() {
   const progress = confirmedBeats(c); $('progress-summary').textContent = `${progress} / ${c.plot.length}`;
   $('track-label').textContent = progress === c.plot.length ? 'Track complete' : `${progress} of ${c.plot.length}`;
   $('track-progress').max = c.plot.length; $('track-progress').value = progress; $('track-length').value = c.plot.length;
+  $('track-boxes').replaceChildren(...Array.from({ length: c.plot.length }, (_, i) => { const box = document.createElement('span'); box.textContent = i + 1; box.className = i < progress ? 'filled' : ''; return box; }));
   $('settings-name').value = c.name; $('setting').value = c.setting; $('scope').value = c.scope;
   const selectedScene = $('entry-scene').value;
   $('entry-scene').replaceChildren(new Option('No scene', ''), ...c.scenes.map(s => new Option(s.name + (s.status === 'closed' ? ' (closed)' : ''), s.id)));
   if (c.scenes.some(s => s.id === selectedScene)) $('entry-scene').value = selectedScene;
+  const speakingAs = $('entry-speaker').value;
+  const archived = [...$('entry-speaker').options].find(o => o.value === 'archived-speaker');
+  $('entry-speaker').replaceChildren(new Option('Narrator', ''), ...c.characters.map(ch => new Option(ch.name, ch.id)));
+  if (archived && journalEdit) $('entry-speaker').append(archived);
+  if ([...$('entry-speaker').options].some(o => o.value === speakingAs)) $('entry-speaker').value = speakingAs;
   renderJournal();
   $('characters').replaceChildren(...c.characters.map(ch => card(ch.name, ch.notes, '', [action('Edit character', () => {
-    characterEdit = ch.id; $('character-name').value = ch.name; $('character-notes').value = ch.notes; $('character-submit').textContent = 'Save character'; $('character-cancel').hidden = false; $('character-name').focus();
+    characterEdit = ch.id; $('character-name').value = ch.name; $('character-notes').value = ch.notes; $('character-submit').textContent = 'Save character'; $('character-cancel').hidden = false; $('character-editor').open = true; $('character-name').focus();
   }), action('Delete character', () => { if (!confirm('Delete this character?')) return; c.characters = c.characters.filter(x => x.id !== ch.id); if (characterEdit === ch.id) cancelEditors(); save(); render(); })])));
-  $('beats').replaceChildren(...c.plot.beats.slice().reverse().map(b => card('', b.body, b.status.toUpperCase(), b.status !== 'pending' ? [] : [action('Confirm relevance', () => { resolveBeat(c, b.id, 'confirmed'); save(); render(); }), action('Dismiss beat', () => { resolveBeat(c, b.id, 'dismissed'); save(); render(); })])));
   $('scenes').replaceChildren(...c.scenes.map(s => card(s.name, s.notes, s.status.toUpperCase(), [action('Edit scene', () => { sceneEdit = s.id; $('scene-name').value = s.name; $('scene-notes').value = s.notes; $('scene-submit').textContent = 'Save scene'; $('scene-cancel').hidden = false; $('scene-name').focus(); }), action(s.status === 'open' ? 'Close scene' : 'Reopen scene', () => { s.status = s.status === 'open' ? 'closed' : 'open'; save(); render(); }), action('Write in scene', () => { showTab('journal'); $('entry-scene').value = s.id; $('entry').focus(); })])));
   $('nodes').replaceChildren(...c.nodes.map(n => {
-    const el = card(n.name, n.notes, n.type, [action('Edit node', () => { nodeEdit = n.id; $('node-type').value = n.type; $('node-name').value = n.name; $('node-notes').value = n.notes; $('node-submit').textContent = 'Save node'; $('node-cancel').hidden = false; $('node-name').focus(); }), action(n.resolved ? 'Reopen node' : 'Resolve node', () => { n.resolved = !n.resolved; save(); render(); }), action('Invoke node as beat', () => { proposeBeat(c, n.type + ': ' + n.name); save(); render(); })]);
+    const el = card(n.name, n.notes, n.type, [action('Edit node', () => { nodeEdit = n.id; $('node-type').value = n.type; $('node-name').value = n.name; $('node-notes').value = n.notes; $('node-submit').textContent = 'Save node'; $('node-cancel').hidden = false; $('node-editor').open = true; $('node-name').focus(); }), action(n.resolved ? 'Reopen node' : 'Resolve node', () => { n.resolved = !n.resolved; save(); render(); }), action('Invoke node as beat', () => { proposeBeat(c, n.type + ': ' + n.name); save(); render(); })]);
     el.classList.toggle('resolved', n.resolved); return el;
   }));
   const selectedTable = $('table-select').value;
@@ -103,7 +169,7 @@ function render() {
   if (c.tables.some(t => t.id === selectedTable)) $('table-select').value = selectedTable;
   $('draw-button').disabled = !c.tables.length;
   $('tables').replaceChildren(...c.tables.map(t => card(t.name, t.entries.join('\n'), `${t.entries.length} entries`, [action('Edit table', () => {
-    tableEdit = t.id; $('table-name').value = t.name; $('table-entries').value = t.entries.join('\n'); $('table-submit').textContent = 'Update table'; $('table-cancel').hidden = false; $('table-name').focus();
+    tableEdit = t.id; $('table-name').value = t.name; $('table-entries').value = t.entries.join('\n'); $('table-submit').textContent = 'Update table'; $('table-cancel').hidden = false; $('table-editor').open = true; $('table-name').focus();
   }), action('Delete table', () => { if (!confirm('Delete this oracle table?')) return; c.tables = c.tables.filter(x => x.id !== t.id); if (tableEdit === t.id) cancelEditors(); save(); render(); })])));
   $('log').replaceChildren(...c.log.slice().reverse().map(x => card('', x.body, new Date(x.at).toLocaleString())));
 }
@@ -113,12 +179,13 @@ $('new-cancel').onclick = () => $('new-dialog').close();
 bind('new', () => { const c = createCampaign($('name').value); c.setting = $('new-setting').value.trim(); c.scope = $('new-scope').value.trim(); campaigns.push(c); active = campaigns.length - 1; cancelEditors(); $('new').reset(); $('new-dialog').close(); $('journal-search').value = ''; showTab('journal'); save(); rememberSelection(); render(); });
 bind('journal-form', () => {
   const body = $('entry').value.trim(); if (!body) throw new Error('Write a journal entry');
-  if (journalEdit) { const entry = campaign().journal.find(x => x.id === journalEdit); entry.body = body; entry.sceneId = $('entry-scene').value || null; }
-  else addJournal(campaign(), body, $('entry-scene').value || null);
+  if (journalEdit) { const entry = campaign().journal.find(x => x.id === journalEdit); entry.body = body; entry.sceneId = $('entry-scene').value || null; entry.speaker = $('entry-speaker').selectedOptions[0].textContent; }
+  else addJournal(campaign(), body, $('entry-scene').value || null, $('entry-speaker').selectedOptions[0].textContent);
   journalEdit = null; $('entry').value = ''; $('entry-submit').textContent = 'Add entry'; $('entry-cancel').hidden = true; save(); render();
 });
 $('entry-cancel').onclick = () => { journalEdit = null; $('entry').value = ''; $('entry-submit').textContent = 'Add entry'; $('entry-cancel').hidden = true; };
 $('journal-search').oninput = renderJournal;
+$('entry').onkeydown = event => { if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') { event.preventDefault(); $('journal-form').requestSubmit(); } };
 bind('character-form', () => {
   const name = $('character-name').value.trim(); if (!name) throw new Error('Enter a character name');
   const fields = { name, notes: $('character-notes').value.trim() };
@@ -166,4 +233,4 @@ $('import').onchange = async e => {
   finally { e.target.value = ''; }
 };
 if (blocked) $('save-state').textContent = 'Saving paused';
-render(); showTab(tab);
+render(); showTab(tab); showEntity(entityTab);

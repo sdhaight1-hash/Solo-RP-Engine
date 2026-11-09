@@ -17,8 +17,14 @@ Local browser execution was blocked by this agent workspace's process/network is
 
 Validation run: https://github.com/sdhaight1-hash/Solo-RP-Engine/actions/runs/42583358153
 
-## Next: user visual/play-test checkpoint
-Use README's five-step play test. Resolve workspace layout and panel visibility preferences before expanding the interface further.
+## Interface target selected
+Steve selected the layout closest to PUM Companion. The play screen now follows its documented arrangement: oracle panel left, journal and entities center, plot nodes right, plot track above, dice below the composer. Desktop panels coexist, medium-width side panels roll out, and narrow screens use one active panel. The timeline merges narration, oracle/dice results and beat actions chronologically. Character dialogue records a speaker name snapshot. Existing version 2 saves remain compatible; speaker names are optional on imported journal entries.
+
+Sources: https://unfolding-machines.github.io/pumc-online-hub/game-interface/ and https://unfolding-machines.github.io/pumc-online-hub/log-panel/
+
+New browser coverage checks 1920px desktop, 1280px rollout behavior and 390px single-panel navigation. The new layout is pending its own CI result; the previous passing run above verifies the earlier interface.
+
+Remaining interface work: resizable dividers, broader entity tabs, rich-text formatting and main-menu campaign cards. These are not claimed as implemented.
 
 ## Following that checkpoint
 1. Multiple plot scopes/sheets and track history; verified per-sheet specifications.

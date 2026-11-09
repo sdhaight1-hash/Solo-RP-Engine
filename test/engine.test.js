@@ -52,3 +52,11 @@ test('oracle endpoints, duplicate weighting, and empty rejection', () => {
   assert.equal(drawOracle(['A', 'A', 'B'], () => 0.5), 'A'); assert.equal(drawOracle(['A', 'B'], () => .999), 'B');
   assert.throws(() => drawOracle([])); assert.throws(() => drawOracle(['']));
 });
+test('speaker snapshots round trip while original v2 journals remain compatible', () => {
+  const c = createCampaign('Voices'); addJournal(c, 'I will find them.', null, 'Mara');
+  assert.equal(parseCampaign(JSON.stringify(c)).journal[0].speaker, 'Mara');
+  delete c.journal[0].speaker;
+  assert.equal(parseCampaign(JSON.stringify(c)).journal[0].body, 'I will find them.');
+  c.journal[0].speaker = {};
+  assert.throws(() => parseCampaign(JSON.stringify(c)));
+});

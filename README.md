@@ -15,7 +15,9 @@ Open http://localhost:3000. The server binds only to this computer. Stop it with
 ## Playable features
 
 - Multiple campaigns with world/tone and plot scope setup.
-- Journal writing, editing, deletion, search and scene links.
+- Companion-style play workspace: oracles left, journal and entities center, plot nodes right, track above and dice below. Wide desktop shows panels together; medium windows use rollout panels; phones show one panel at a time.
+- Chronological journal timeline with narration, character dialogue, dice, oracle answers and inline beat confirmation.
+- Journal writing, editing, deletion, search and scene links. Ctrl/Cmd+Enter submits an entry.
 - Editable characters, scenes and typed plot nodes.
 - Custom-length plot track with separate beat invocation, confirmation and dismissal.
 - Named editable oracle tables, questions, dice expressions and persistent activity log.
@@ -53,4 +55,4 @@ Set `CHROMIUM_PATH` only if using an existing Chromium executable. Browser testi
 4. Invoke a beat. Confirm that the track waits for your confirmation; dismiss a second beat.
 5. Export the campaign and import it as a new copy. Check that the journal, scenes and track survive.
 
-Feedback needed: whether this workspace organization supports your actual play, which panels should stay visible together, and how closely the next UI iteration should follow the Companion's workflow. Automated checks cannot answer those preferences.
+The interface target is the documented PUM Companion panel arrangement. Check real play at your display size and report obstructed controls, awkward panel switching, or missing steps. Resizable dividers, official theme assets, full entity-tab management and official random tables are not implemented yet.

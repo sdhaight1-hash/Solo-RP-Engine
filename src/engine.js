@@ -20,7 +20,7 @@ export function parseCampaign(input) {
   const valid = c.version === 2 && named(c.id) && named(c.name) && text(c.setting) && text(c.scope) &&
     list(c.characters, x => identified(x) && named(x.name) && text(x.notes)) &&
     list(c.scenes, x => identified(x) && named(x.name) && text(x.notes) && ['open', 'closed'].includes(x.status)) &&
-    list(c.journal, x => identified(x) && text(x.body) && text(x.at, 100) && (x.sceneId === null || c.scenes.some(s => s.id === x.sceneId))) &&
+    list(c.journal, x => identified(x) && text(x.body) && text(x.at, 100) && (x.speaker === undefined || named(x.speaker)) && (x.sceneId === null || c.scenes.some(s => s.id === x.sceneId))) &&
     list(c.tables, x => identified(x) && named(x.name) && list(x.entries, named) && x.entries.length > 0) &&
     list(c.nodes, x => identified(x) && NODE_TYPES.includes(x.type) && named(x.name) && text(x.notes) && typeof x.resolved === 'boolean') &&
     list(c.log, x => identified(x) && text(x.at, 100) && text(x.body)) && record(c.plot) &&
@@ -35,10 +35,11 @@ export function parseCampaign(input) {
   return Object.fromEntries(['version', 'id', 'name', 'setting', 'scope', 'journal', 'characters', 'tables', 'scenes', 'nodes', 'log', 'plot'].map(k => [k, c[k]]));
 }
 export function addLog(c, body) { c.log.push({ id: id(), body, at: now() }); }
-export function addJournal(c, body, sceneId = null) {
+export function addJournal(c, body, sceneId = null, speaker = 'Narrator') {
   if (!text(body) || !body.trim()) throw new Error('Write a journal entry');
+  if (!named(speaker)) throw new Error('Choose a speaker');
   if (sceneId !== null && !c.scenes.some(s => s.id === sceneId)) throw new Error('Scene not found');
-  c.journal.push({ id: id(), body: body.trim(), sceneId, at: now() });
+  c.journal.push({ id: id(), body: body.trim(), sceneId, speaker, at: now() });
 }
 export function newRecord(fields) { return { id: id(), ...fields }; }
 export function confirmedBeats(c) { return c.plot.beats.filter(b => b.status === 'confirmed').length; }
