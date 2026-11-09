@@ -39,8 +39,9 @@ const { chromium } = require('playwright');
     // Switching does not leak unsaved editors between campaigns.
     await page.locator('#campaigns').selectOption('0'); assert.equal(await page.locator('#journal .entry-card').count(), 0); await page.locator('#campaigns').selectOption('1');
     await page.setViewportSize({ width: 390, height: 844 });
-    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
     await page.screenshot({ path: '/tmp/solo-rp-mobile.png', fullPage: true });
+    const overflow = await page.evaluate(() => ({ width: innerWidth, scroll: document.documentElement.scrollWidth, elements: [...document.querySelectorAll('body *')].filter(el => el.getBoundingClientRect().right > innerWidth + 1).map(el => ({ tag: el.tagName, id: el.id, className: el.className, right: el.getBoundingClientRect().right })).slice(0, 15) }));
+    assert.ok(overflow.scroll <= overflow.width, JSON.stringify(overflow));
     await page.setViewportSize({ width: 1440, height: 1000 }); await page.screenshot({ path: '/tmp/solo-rp-desktop.png', fullPage: true });
     // Two tabs must not silently overwrite one another.
     const other = await context.newPage(); await other.goto('http://localhost:3000');
