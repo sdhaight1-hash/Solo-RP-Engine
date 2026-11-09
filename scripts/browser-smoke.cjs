@@ -57,6 +57,7 @@ const { chromium } = require('playwright');
     assert.equal(await page.locator('#journal-panel').isVisible(), true); assert.equal(await page.locator('#entities-panel').isVisible(), false);
     await page.locator('#oracle-toggle').click(); assert.equal(await page.locator('#oracle-panel').isVisible(), true); assert.equal(await page.locator('#journal-panel').isVisible(), false);
     await page.locator('#journal-toggle').click();
+    assert.ok((await page.locator('#campaigns').boundingBox()).width > 300, 'Campaign selector remains readable on mobile');
     await page.screenshot({ path: '/tmp/solo-rp-mobile.png', fullPage: true });
     const overflow = await page.evaluate(() => ({ width: innerWidth, scroll: document.documentElement.scrollWidth, elements: [...document.querySelectorAll('body *')].filter(el => el.getBoundingClientRect().right > innerWidth + 1).map(el => ({ tag: el.tagName, id: el.id, className: el.className, right: el.getBoundingClientRect().right })).slice(0, 15) }));
     assert.ok(overflow.scroll <= overflow.width, JSON.stringify(overflow));

@@ -22,7 +22,9 @@ Steve selected the layout closest to PUM Companion. The play screen now follows 
 
 Sources: https://unfolding-machines.github.io/pumc-online-hub/game-interface/ and https://unfolding-machines.github.io/pumc-online-hub/log-panel/
 
-New browser coverage checks 1920px desktop, 1280px rollout behavior and 390px single-panel navigation. The new layout is pending its own CI result; the previous passing run above verifies the earlier interface.
+New browser coverage checks 1920px desktop, 1280px rollout behavior and 390px single-panel navigation. The new layout passed both engine and Chromium jobs in run 42585783468 for commit 48a0d7d, including medium-width toolbar accessibility. Desktop and mobile screenshots were reviewed; follow-up styling gives the mobile campaign selector a full row and keeps the desktop panes within 1080px height. The browser suite reruns for those refinements.
+
+Panel-layout validation: https://github.com/sdhaight1-hash/Solo-RP-Engine/actions/runs/42585783468
 
 Remaining interface work: resizable dividers, broader entity tabs, rich-text formatting and main-menu campaign cards. These are not claimed as implemented.
 
