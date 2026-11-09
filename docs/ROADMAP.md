@@ -1,29 +1,28 @@
-# Implementation plan
+# Development status and next checkpoints
 
-## 0: Development foundation (implemented)
-- Dependency-free browser shell; multiple campaigns, journal entries, character notes.
-- Generic NdS dice, uniform custom oracle draws, local storage, validated version 1 JSON import/export.
-- Node mechanics tests, syntax checks, GitHub Actions CI.
+## Implemented: core play loop
+- Campaign setup and switching; editable/searchable journal and editable characters.
+- Editable named custom tables, questions, dice and persistent activity log.
+- Editable scenes, scene-journal links, closing/reopening scenes.
+- Editable typed plot nodes with manual resolution/reopening.
+- Local storage, version 2 JSON import/export, migration from original v1 files, storage recovery and cross-tab conflict detection.
 
-Acceptance: checks pass; campaign export/import preserves content; invalid saves are rejected. Browser QA still required for storage, downloads, import, keyboard navigation, and narrow screens.
+## Implemented: first PUM mechanics slice
+Custom-length plot track; beat invocation independent from confirmation; dismissal without advancing; explicit node invocation. Eight boxes is an editable application default. Source and limits are in PUM-MECHANICS.md.
 
-## 1: Complete the basic play loop
-- Edit journal and characters; persist dice/oracle outcomes in the campaign log.
-- Persist named custom tables; explicit campaign switching and backup feedback.
-- Browser acceptance: create two campaigns, edit both, reload, export one and import into a fresh browser profile. Failed import must leave existing state intact.
+## Validation
+Engine tests and syntax checks run locally. A Chromium end-to-end script covers campaign setup, safe text rendering, editing, custom tables, dice, scenes, beat confirmation, reload persistence, fresh-context import/export, malformed imports, mobile overflow, cross-tab conflicts and corrupt-save preservation. GitHub Actions runs this script and uploads desktop/mobile screenshots.
 
-## 2: PUM v9 mechanics
-- Write source/page-based specifications for plot scopes, nodes, tracks, focuses, beat invocation, confirmation and advancement.
-- Separate proposed beats from confirmed beats; do not automatically advance every scene.
-- Implement one verified plot-sheet mode first, with boundary tests and deterministic examples.
-- Keep exact published table text separate from engine code; confirm redistribution terms before including content.
+Local browser execution was blocked by this agent workspace's process/network isolation. Do not claim the browser suite passed until its workflow run reports success. User visual/play testing remains necessary for layout and workflow preference.
 
-## 3: SUM v8 Rev2 and GUM v2.2
-- SUM: specify and implement scene emulation and NPC interaction workflows from the supplied edition.
-- GUM: specify game setup and improvisation helpers from the supplied edition.
-- Check actual dice/table indexing, modifiers and transitions against each source before implementation. Generic prototype oracles are not substitutes for official mechanics.
+## Next: user visual/play-test checkpoint
+Use README's five-step play test. Resolve workspace layout and panel visibility preferences before expanding the interface further.
 
-## Later
-Search, richer entities, themes, accessible responsive workspace, offline installation/service worker, and desktop packaging only after the core play loop is reliable. AI, cloud, 3D dice, decks and marketplace extras are outside the initial scope.
+## Following that checkpoint
+1. Multiple plot scopes/sheets and track history; verified per-sheet specifications.
+2. Official PUM beat/oracle indexing with source/page fixtures and appropriate content distribution permissions. Keep user-entered content separate from shipped engine code.
+3. SUM v8 Rev2 scene-control and NPC interaction mechanics, checked against the supplied edition.
+4. GUM v2.2 game setup/improvisation workflow, checked against the supplied edition.
+5. Richer entities, accessibility refinements and offline installation once actual play confirms the core workflow.
 
-The prototype runs locally but is not yet an installable offline PWA. No feature parity or official-app save compatibility is claimed.
+AI services, accounts, cloud sync, desktop packaging and public deployment remain outside this checkpoint. No feature parity or official-app save compatibility is claimed.
